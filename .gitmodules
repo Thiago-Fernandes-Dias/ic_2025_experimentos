@@ -1,43 +1,3 @@
-[submodule "./fingernet-updated"]
-	path = ./fingernet-updated
-	url = git@github.com:Thiago-Fernandes-Dias/fingernet-updated
-    branch = master
-[submodule "./minutiaenet-updated"]
-	path = ./minutiaenet-updated
-	url = git@github.com:Thiago-Fernandes-Dias/minutiaenet-updated.git
-    branch = master
-[submodule "./MSU-LatentAFIS"]
-	path = ./MSU-LatentAFIS
-	url = git@github.com:Thiago-Fernandes-Dias/MSU-LatentAFIS
-    branch = master
-[submodule "./fixed-length-fingerprint-extractors"]
-	path = ./fixed-length-fingerprint-extractors
-	url = git@github.com:Thiago-Fernandes-Dias/fixed-length-fingerprint-extractors.git
-    branch = main
-[submodule "./MinutiaCylinderCode"]
-	path = ./MinutiaCylinderCode
-	url = git@github.com:Thiago-Fernandes-Dias/MinutiaCylinderCode.git
-	branch = master
-[submodule "./FLARE_ENH"]
-	path = ./FLARE_ENH
-	url = git@github.com:Thiago-Fernandes-Dias/FLARE_ENH.git
-	branch = master
-[submodule "./FLARE"]
-	path = ./FLARE
-	url = git@github.com:Thiago-Fernandes-Dias/FLARE.git
-	branch = master
-[submodule "FLARE"]
-	path = FLARE
-	url = git@github.com:Thiago-Fernandes-Dias/FLARE.git
-	branch = master
-[submodule "FLARE_ENH"]
-	path = FLARE_ENH
-	url = git@github.com:Thiago-Fernandes-Dias/FLARE_ENH.git
-	branch = master
-[submodule "MinutiaCylinderCode"]
-	path = MinutiaCylinderCode
-	url = git@github.com:Thiago-Fernandes-Dias/MinutiaCylinderCode.git
-	branch = master
 [submodule "fingernet-updated"]
 	path = fingernet-updated
 	url = git@github.com:Thiago-Fernandes-Dias/fingernet-updated
@@ -54,3 +14,15 @@
 	path = fixed-length-fingerprint-extractors
 	url = git@github.com:Thiago-Fernandes-Dias/fixed-length-fingerprint-extractors.git
 	branch = main
+[submodule "MinutiaCylinderCode"]
+	path = MinutiaCylinderCode
+	url = git@github.com:Thiago-Fernandes-Dias/MinutiaCylinderCode.git
+	branch = master
+[submodule "FLARE_ENH"]
+	path = FLARE_ENH
+	url = git@github.com:Thiago-Fernandes-Dias/FLARE_ENH.git
+	branch = master
+[submodule "FLARE"]
+	path = FLARE
+	url = git@github.com:Thiago-Fernandes-Dias/FLARE.git
+	branch = master
