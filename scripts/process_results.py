@@ -62,27 +62,77 @@ DEFAULT_FILES = [
 ]
 
 
-def derive_metrics_csv_path(input_csv: str | Path) -> Path:
-    csv_path = Path(input_csv)
-    if csv_path.name.endswith("_metrics.csv"):
-        return csv_path
-    if csv_path.name.endswith(".csv"):
-        return csv_path.with_name(csv_path.name[:-4] + "_metrics.csv")
-    return csv_path.with_name(csv_path.name + "_metrics.csv")
+def load_dataframe(file_path: str | Path) -> pd.DataFrame:
+    path = Path(file_path)
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        return pd.read_parquet(path)
+    if suffix == ".csv":
+        return pd.read_csv(path)
+    raise ValueError(f"Unsupported file extension '{suffix}'. Expected .parquet or .csv")
 
 
-def calculate_metrics(input_csv: str | Path, output_csv: str | Path | None = None) -> None:
-    csv_path = (SCRIPT_DIR / input_csv).resolve()
-    if not csv_path.is_file() or not csv_path.name.endswith(".csv"):
-        print(f"Skipping invalid input csv: {input_csv}")
+def save_dataframe(dataframe: pd.DataFrame, file_path: str | Path) -> None:
+    path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        dataframe.to_parquet(path, index=False)
+    elif suffix == ".csv":
+        dataframe.to_csv(path, index=False)
+    else:
+        raise ValueError(f"Unsupported file extension '{suffix}'. Expected .parquet or .csv")
+
+
+def resolve_existing_file(file_path: str | Path) -> Path:
+    path = (SCRIPT_DIR / file_path).resolve()
+    if path.is_file():
+        return path
+    alt_suffix = ".parquet" if path.suffix.lower() == ".csv" else ".csv"
+    alt_path = path.with_suffix(alt_suffix)
+    if alt_path.is_file():
+        return alt_path
+    return path
+
+
+def derive_metrics_path(input_path: str | Path, output_format: str | None = None) -> Path:
+    path = Path(input_path)
+    suffix = path.suffix.lower()
+
+    if output_format is not None:
+        clean_format = output_format.lstrip(".").lower()
+        target_suffix = f".{clean_format}"
+    elif suffix in (".parquet", ".csv"):
+        target_suffix = suffix
+    else:
+        target_suffix = ".csv"
+
+    stem = path.stem
+    if stem.endswith("_metrics"):
+        return path.with_suffix(target_suffix)
+
+    return path.with_name(f"{stem}_metrics{target_suffix}")
+
+
+derive_metrics_csv_path = derive_metrics_path
+
+
+def calculate_metrics(
+    input_file: str | Path,
+    output_file: str | Path | None = None,
+    output_format: str | None = None,
+) -> None:
+    resolved_path = resolve_existing_file(input_file)
+    if not resolved_path.is_file() or resolved_path.suffix.lower() not in (".csv", ".parquet"):
+        print(f"Skipping invalid input file: {input_file}")
         return
 
-    if output_csv is None:
-        out_path = derive_metrics_csv_path(csv_path)
+    if output_file is None:
+        out_path = derive_metrics_path(resolved_path, output_format=output_format)
     else:
-        out_path = (SCRIPT_DIR / output_csv).resolve()
+        out_path = (SCRIPT_DIR / output_file).resolve()
 
-    comps = pd.read_csv(csv_path)
+    comps = load_dataframe(resolved_path)
 
     min_score = comps["score"].min()
     max_score = comps["score"].max()
@@ -120,18 +170,17 @@ def calculate_metrics(input_csv: str | Path, output_csv: str | Path | None = Non
         })
 
     result = pd.DataFrame(results_series)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    result.to_csv(out_path, index=False)
+    save_dataframe(result, out_path)
     print(f"Metrics saved to: {out_path}")
 
 
-def plot_histogram(input_csv: str | Path, bin_width: float = BIN_WIDTH) -> None:
-    csv_path = (SCRIPT_DIR / input_csv).resolve()
-    if not csv_path.is_file():
-        print(f"File not found: {input_csv}")
+def plot_histogram(input_file: str | Path, bin_width: float = BIN_WIDTH) -> None:
+    resolved_path = resolve_existing_file(input_file)
+    if not resolved_path.is_file() or resolved_path.suffix.lower() not in (".csv", ".parquet"):
+        print(f"File not found: {input_file}")
         return
 
-    df = pd.read_csv(csv_path)
+    df = load_dataframe(resolved_path)
 
     genuine = df[df["user_1"] == df["user_2"]]["score"]
     impostor = df[df["user_1"] != df["user_2"]]["score"]
@@ -148,60 +197,52 @@ def plot_histogram(input_csv: str | Path, bin_width: float = BIN_WIDTH) -> None:
     plt.hist(impostor, bins=bin_edges, alpha=0.5, label="Usuários diferentes", color="red", edgecolor="black")
     plt.xlabel("Score")
     plt.ylabel("Quantidade")
-    plt.title(csv_path.stem)
+    plt.title(resolved_path.stem)
     plt.legend()
     plt.tight_layout()
 
-    output_png = csv_path.with_suffix(".png")
+    output_png = resolved_path.with_suffix(".png")
     plt.savefig(output_png, dpi=150)
     plt.close()
     print(f"Histogram saved to: {output_png}")
 
 
-def find_min_diff(csv_path: str | Path) -> dict | None:
-    path = (SCRIPT_DIR / csv_path).resolve()
-    if not path.is_file():
-        print(f"File not found: {csv_path}")
+def find_min_diff(metrics_file: str | Path) -> dict | None:
+    resolved_path = resolve_existing_file(metrics_file)
+    if not resolved_path.is_file() or resolved_path.suffix.lower() not in (".csv", ".parquet"):
+        print(f"File not found: {metrics_file}")
         return None
 
-    best_row = None
-    best_diff = float("inf")
-
-    with open(path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            frr = float(row["frr"])
-            far = float(row["far"])
-            diff = abs(frr - far)
-            if diff < best_diff:
-                best_diff = diff
-                best_row = row
-
-    if best_row is None:
-        print(f"No data found in {csv_path}")
+    df = load_dataframe(resolved_path)
+    if df.empty:
+        print(f"No data found in {metrics_file}")
         return None
+
+    diff_series = (df["frr"].astype(float) - df["far"].astype(float)).abs()
+    best_idx = diff_series.idxmin()
+    best_row = df.loc[best_idx]
+    best_diff = float(diff_series.loc[best_idx])
 
     frr = round(float(best_row["frr"]), 3)
     far = round(float(best_row["far"]), 3)
-    err = round((float(best_row["frr"]) + float(best_row["far"])) / 2.0, 3)
+    err = round((frr + far) / 2.0, 3)
     threshold = round(float(best_row["threshold"]), 3)
 
-    path_parts = [p.lower() for p in path.parts]
+    path_parts = [p.lower() for p in resolved_path.parts]
+    stem = resolved_path.stem
+    if stem.endswith("_metrics"):
+        stem = stem[:-8]
+
     if "deepprint" in path_parts:
-        stem = path.name[:-12] if path.name.endswith("_metrics.csv") else (path.name[:-4] if path.name.endswith(".csv") else path.name)
         filename = f"deep_print_{stem}"
     elif "flare" in path_parts:
         idx = path_parts.index("flare")
         db_name = path_parts[idx + 1]
         filename = f"flare_{db_name}"
     else:
-        filename = path.name
-        if filename.endswith("_metrics.csv"):
-            filename = filename[:-12]
-        elif filename.endswith(".csv"):
-            filename = filename[:-4]
+        filename = stem
 
-    print(f"File: {path.name}")
+    print(f"File: {resolved_path.name}")
     print(f"Row with minimal |frr - far| (diff = {best_diff:.10f}):")
     print(f"  far = {far}")
     print(f"  frr = {frr}")
@@ -216,32 +257,32 @@ def find_min_diff(csv_path: str | Path) -> dict | None:
     }
 
 
-def run_metrics_command(files: list[str]) -> None:
-    for input_csv in files:
-        print(f"Calculating metrics for: {input_csv}")
-        calculate_metrics(input_csv)
+def run_metrics_command(files: list[str], output_format: str | None = None) -> None:
+    for input_file in files:
+        print(f"Calculating metrics for: {input_file}")
+        calculate_metrics(input_file, output_format=output_format)
 
 
 def run_histogram_command(files: list[str], bin_width: float) -> None:
-    for input_csv in files:
-        print(f"Plotting histogram for: {input_csv}")
-        plot_histogram(input_csv, bin_width)
+    for input_file in files:
+        print(f"Plotting histogram for: {input_file}")
+        plot_histogram(input_file, bin_width)
 
 
-def run_min_diff_command(files: list[str], output_csv: str | Path = "../results/min_diff.csv") -> None:
+def run_min_diff_command(files: list[str], output_file: str | Path = "../results/min_diff.csv") -> None:
     results = []
-    for input_csv in files:
-        metrics_csv = derive_metrics_csv_path(input_csv)
-        print(f"Finding min diff for: {metrics_csv}")
-        row_dict = find_min_diff(metrics_csv)
+    for input_file in files:
+        metrics_path = derive_metrics_path(input_file)
+        resolved_metrics_path = resolve_existing_file(metrics_path)
+        print(f"Finding min diff for: {resolved_metrics_path.name}")
+        row_dict = find_min_diff(resolved_metrics_path)
         if row_dict is not None:
             results.append(row_dict)
 
     if results:
-        out_path = (SCRIPT_DIR / output_csv).resolve()
-        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path = (SCRIPT_DIR / output_file).resolve()
         results_dataframe = pd.DataFrame(results, columns=["file", "far", "frr", "err", "threshold"])
-        results_dataframe.to_csv(out_path, index=False)
+        save_dataframe(results_dataframe, out_path)
         print(f"Min diff results saved to: {out_path}")
 
 
@@ -250,31 +291,33 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", help="Sub-command help")
 
     metrics_parser = subparsers.add_parser("metrics", help="Calculate FRR and FAR metrics across thresholds.")
-    metrics_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score CSV files to process.")
+    metrics_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
+    metrics_parser.add_argument("--format", choices=["csv", "parquet"], default=None, help="Output format for metrics files (defaults to input file format).")
 
     histogram_parser = subparsers.add_parser("histogram", help="Plot score distribution histograms.")
-    histogram_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score CSV files to process.")
+    histogram_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
     histogram_parser.add_argument("--bin-width", type=float, default=BIN_WIDTH, help="Bin width for histogram.")
 
-    min_diff_parser = subparsers.add_parser("min-diff", help="Find row with minimal |frr - far| from metrics CSV files.")
-    min_diff_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score CSV files (or metrics CSV files) to process.")
-    min_diff_parser.add_argument("--output", default="../results/min_diff.csv", help="Output CSV file path for min diff results.")
+    min_diff_parser = subparsers.add_parser("min-diff", help="Find row with minimal |frr - far| from metrics files.")
+    min_diff_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files or metrics files (.csv or .parquet) to process.")
+    min_diff_parser.add_argument("--output", default="../results/min_diff.csv", help="Output file path for min diff results (.csv or .parquet).")
 
     all_parser = subparsers.add_parser("all", help="Run metrics, histogram, and min-diff analysis on target files.")
-    all_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score CSV files to process.")
+    all_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
     all_parser.add_argument("--bin-width", type=float, default=BIN_WIDTH, help="Bin width for histogram.")
-    all_parser.add_argument("--output", default="../results/min_diff.csv", help="Output CSV file path for min diff results.")
+    all_parser.add_argument("--format", choices=["csv", "parquet"], default=None, help="Output format for metrics files (defaults to input file format).")
+    all_parser.add_argument("--output", default="../results/min_diff.csv", help="Output file path for min diff results (.csv or .parquet).")
 
     args = parser.parse_args()
 
     if args.command == "metrics":
-        run_metrics_command(args.files)
+        run_metrics_command(args.files, args.format)
     elif args.command == "histogram":
         run_histogram_command(args.files, args.bin_width)
     elif args.command == "min-diff":
         run_min_diff_command(args.files, args.output)
     elif args.command == "all":
-        run_metrics_command(args.files)
+        run_metrics_command(args.files, args.format)
         run_histogram_command(args.files, args.bin_width)
         run_min_diff_command(args.files, args.output)
     else:
