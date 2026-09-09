@@ -11,54 +11,54 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 BIN_WIDTH = 0.05
 
 DEFAULT_FILES = [
-    "../results/DeepPrint/fvc_2000_db1_a.csv",
-    "../results/DeepPrint/fvc_2000_db1_b.csv",
-    "../results/DeepPrint/fvc_2000_db2_a.csv",
-    "../results/DeepPrint/fvc_2000_db2_b.csv",
-    "../results/DeepPrint/fvc_2000_db3_a.csv",
-    "../results/DeepPrint/fvc_2000_db3_b.csv",
-    "../results/DeepPrint/fvc_2000_db4_a.csv",
-    "../results/DeepPrint/fvc_2000_db4_b.csv",
-    "../results/DeepPrint/fvc_2002_db1_a.csv",
-    "../results/DeepPrint/fvc_2002_db1_b.csv",
-    "../results/DeepPrint/fvc_2002_db2_a.csv",
-    "../results/DeepPrint/fvc_2002_db2_b.csv",
-    "../results/DeepPrint/fvc_2002_db3_a.csv",
-    "../results/DeepPrint/fvc_2002_db3_b.csv",
-    "../results/DeepPrint/fvc_2002_db4_a.csv",
-    "../results/DeepPrint/fvc_2002_db4_b.csv",
-    "../results/DeepPrint/fvc_2004_db1_a.csv",
-    "../results/DeepPrint/fvc_2004_db1_b.csv",
-    "../results/DeepPrint/fvc_2004_db2_a.csv",
-    "../results/DeepPrint/fvc_2004_db2_b.csv",
-    "../results/DeepPrint/fvc_2004_db3_a.csv",
-    "../results/DeepPrint/fvc_2004_db3_b.csv",
-    "../results/DeepPrint/fvc_2004_db4_a.csv",
-    "../results/DeepPrint/fvc_2004_db4_b.csv",
-    "../results/FLARE/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv",
-    "../results/FLARE/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv",
+    # "../results/DeepPrint/fvc_2000_db1_a.parquet",
+    # "../results/DeepPrint/fvc_2000_db1_b.parquet",
+    # "../results/DeepPrint/fvc_2000_db2_a.parquet",
+    # "../results/DeepPrint/fvc_2000_db2_b.parquet",
+    # "../results/DeepPrint/fvc_2000_db3_a.parquet",
+    # "../results/DeepPrint/fvc_2000_db3_b.parquet",
+    # "../results/DeepPrint/fvc_2000_db4_a.parquet",
+    # "../results/DeepPrint/fvc_2000_db4_b.parquet",
+    # "../results/DeepPrint/fvc_2002_db1_a.parquet",
+    # "../results/DeepPrint/fvc_2002_db1_b.parquet",
+    # "../results/DeepPrint/fvc_2002_db2_a.parquet",
+    # "../results/DeepPrint/fvc_2002_db2_b.parquet",
+    # "../results/DeepPrint/fvc_2002_db3_a.parquet",
+    # "../results/DeepPrint/fvc_2002_db3_b.parquet",
+    # "../results/DeepPrint/fvc_2002_db4_a.parquet",
+    # "../results/DeepPrint/fvc_2002_db4_b.parquet",
+    # "../results/DeepPrint/fvc_2004_db1_a.parquet",
+    # "../results/DeepPrint/fvc_2004_db1_b.parquet",
+    # "../results/DeepPrint/fvc_2004_db2_a.parquet",
+    # "../results/DeepPrint/fvc_2004_db2_b.parquet",
+    # "../results/DeepPrint/fvc_2004_db3_a.parquet",
+    # "../results/DeepPrint/fvc_2004_db3_b.parquet",
+    # "../results/DeepPrint/fvc_2004_db4_a.parquet",
+    # "../results/DeepPrint/fvc_2004_db4_b.parquet",
+    # "../results/DeepPrint/fvc_2000_db1_a.parquet",
+    "../results/FLARE/fvc_2000_db1_b.parquet",
+    "../results/FLARE/fvc_2000_db2_a.parquet",
+    "../results/FLARE/fvc_2000_db2_b.parquet",
+    "../results/FLARE/fvc_2000_db3_a.parquet",
+    "../results/FLARE/fvc_2000_db3_b.parquet",
+    "../results/FLARE/fvc_2000_db4_a.parquet",
+    "../results/FLARE/fvc_2000_db4_b.parquet",
+    "../results/FLARE/fvc_2002_db1_a.parquet",
+    "../results/FLARE/fvc_2002_db1_b.parquet",
+    "../results/FLARE/fvc_2002_db2_a.parquet",
+    "../results/FLARE/fvc_2002_db2_b.parquet",
+    "../results/FLARE/fvc_2002_db3_a.parquet",
+    "../results/FLARE/fvc_2002_db3_b.parquet",
+    "../results/FLARE/fvc_2002_db4_a.parquet",
+    "../results/FLARE/fvc_2002_db4_b.parquet",
+    "../results/FLARE/fvc_2004_db1_a.parquet",
+    "../results/FLARE/fvc_2004_db1_b.parquet",
+    "../results/FLARE/fvc_2004_db2_a.parquet",
+    "../results/FLARE/fvc_2004_db2_b.parquet",
+    "../results/FLARE/fvc_2004_db3_a.parquet",
+    "../results/FLARE/fvc_2004_db3_b.parquet",
+    "../results/FLARE/fvc_2004_db4_a.parquet",
+    "../results/FLARE/fvc_2004_db4_b.parquet",
 ]
 
 
@@ -134,10 +134,6 @@ def calculate_metrics(
 
     comps = load_dataframe(resolved_path)
 
-    min_score = comps["score"].min()
-    max_score = comps["score"].max()
-    comps["score"] = (comps["score"] - min_score) / (max_score - min_score) * 2.0
-
     thresholds = comps["score"].unique()
     min_t, max_t = thresholds.max(), thresholds.min()
     sample_thresholds = np.linspace(min_t, max_t, 1000)
@@ -193,8 +189,8 @@ def plot_histogram(input_file: str | Path, bin_width: float = BIN_WIDTH) -> None
     )
 
     plt.figure(figsize=(10, 6))
-    plt.hist(genuine, bins=bin_edges, alpha=0.5, label="Mesmo usuário", color="blue", edgecolor="black")
-    plt.hist(impostor, bins=bin_edges, alpha=0.5, label="Usuários diferentes", color="red", edgecolor="black")
+    plt.hist(genuine, bins=bin_edges, alpha=0.05, label="Mesmo usuário", color="blue", edgecolor="black")
+    plt.hist(impostor, bins=bin_edges, alpha=0.05, label="Usuários diferentes", color="red", edgecolor="black")
     plt.xlabel("Score")
     plt.ylabel("Quantidade")
     plt.title(resolved_path.stem)
