@@ -11,228 +11,278 @@ import numpy as np
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-BIN_WIDTH = 0.05
-DECIMAL_PLACES = 6
+RESULTS_DIR = (SCRIPT_DIR / "../results").resolve()
+METRICS_DIR = RESULTS_DIR / "metrics"
+HISTOGRAMS_DIR = RESULTS_DIR / "histograms"
+
+BIN_WIDTH = 0.005
+DECIMAL_PLACES = 8
 THRESHOLD_GROUP_SIZE = 200
 
+HISTOGRAM_GENUINE_COLOR: tuple[float, float, float] = (0.15, 0.85, 0.35)
+HISTOGRAM_IMPOSTOR_COLOR: tuple[float, float, float] = (1.0, 0.25, 0.25)
+HISTOGRAM_ALPHA = 0.6
+
+
 DEFAULT_FILES: tuple[tuple[str, str], ...] = (
-    ("../results/DeepPrint/fvc_2000_db1_a.csv", "deep_print_fvc_2000_db1_a"),
-    ("../results/DeepPrint/fvc_2000_db1_b.csv", "deep_print_fvc_2000_db1_b"),
-    ("../results/DeepPrint/fvc_2000_db2_a.csv", "deep_print_fvc_2000_db2_a"),
-    ("../results/DeepPrint/fvc_2000_db2_b.csv", "deep_print_fvc_2000_db2_b"),
-    ("../results/DeepPrint/fvc_2000_db3_a.csv", "deep_print_fvc_2000_db3_a"),
-    ("../results/DeepPrint/fvc_2000_db3_b.csv", "deep_print_fvc_2000_db3_b"),
-    ("../results/DeepPrint/fvc_2000_db4_a.csv", "deep_print_fvc_2000_db4_a"),
-    ("../results/DeepPrint/fvc_2000_db4_b.csv", "deep_print_fvc_2000_db4_b"),
-    ("../results/DeepPrint/fvc_2002_db1_a.csv", "deep_print_fvc_2002_db1_a"),
-    ("../results/DeepPrint/fvc_2002_db1_b.csv", "deep_print_fvc_2002_db1_b"),
-    ("../results/DeepPrint/fvc_2002_db2_a.csv", "deep_print_fvc_2002_db2_a"),
-    ("../results/DeepPrint/fvc_2002_db2_b.csv", "deep_print_fvc_2002_db2_b"),
-    ("../results/DeepPrint/fvc_2002_db3_a.csv", "deep_print_fvc_2002_db3_a"),
-    ("../results/DeepPrint/fvc_2002_db3_b.csv", "deep_print_fvc_2002_db3_b"),
-    ("../results/DeepPrint/fvc_2002_db4_a.csv", "deep_print_fvc_2002_db4_a"),
-    ("../results/DeepPrint/fvc_2002_db4_b.csv", "deep_print_fvc_2002_db4_b"),
-    ("../results/DeepPrint/fvc_2004_db1_a.csv", "deep_print_fvc_2004_db1_a"),
-    ("../results/DeepPrint/fvc_2004_db1_b.csv", "deep_print_fvc_2004_db1_b"),
-    ("../results/DeepPrint/fvc_2004_db2_a.csv", "deep_print_fvc_2004_db2_a"),
-    ("../results/DeepPrint/fvc_2004_db2_b.csv", "deep_print_fvc_2004_db2_b"),
-    ("../results/DeepPrint/fvc_2004_db3_a.csv", "deep_print_fvc_2004_db3_a"),
-    ("../results/DeepPrint/fvc_2004_db3_b.csv", "deep_print_fvc_2004_db3_b"),
-    ("../results/DeepPrint/fvc_2004_db4_a.csv", "deep_print_fvc_2004_db4_a"),
-    ("../results/DeepPrint/fvc_2004_db4_b.csv", "deep_print_fvc_2004_db4_b"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db1_a.csv", "deep_print_priorenh_fvc_2000_db1_a"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db1_b.csv", "deep_print_priorenh_fvc_2000_db1_b"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db2_a.csv", "deep_print_priorenh_fvc_2000_db2_a"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db2_b.csv", "deep_print_priorenh_fvc_2000_db2_b"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db3_a.csv", "deep_print_priorenh_fvc_2000_db3_a"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db3_b.csv", "deep_print_priorenh_fvc_2000_db3_b"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db4_a.csv", "deep_print_priorenh_fvc_2000_db4_a"),
-    ("../results/DeepPrint_priorenh/fvc_2000_db4_b.csv", "deep_print_priorenh_fvc_2000_db4_b"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db1_a.csv", "deep_print_priorenh_fvc_2002_db1_a"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db1_b.csv", "deep_print_priorenh_fvc_2002_db1_b"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db2_a.csv", "deep_print_priorenh_fvc_2002_db2_a"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db2_b.csv", "deep_print_priorenh_fvc_2002_db2_b"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db3_a.csv", "deep_print_priorenh_fvc_2002_db3_a"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db3_b.csv", "deep_print_priorenh_fvc_2002_db3_b"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db4_a.csv", "deep_print_priorenh_fvc_2002_db4_a"),
-    ("../results/DeepPrint_priorenh/fvc_2002_db4_b.csv", "deep_print_priorenh_fvc_2002_db4_b"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db1_a.csv", "deep_print_priorenh_fvc_2004_db1_a"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db1_b.csv", "deep_print_priorenh_fvc_2004_db1_b"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db2_a.csv", "deep_print_priorenh_fvc_2004_db2_a"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db2_b.csv", "deep_print_priorenh_fvc_2004_db2_b"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db3_a.csv", "deep_print_priorenh_fvc_2004_db3_a"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db3_b.csv", "deep_print_priorenh_fvc_2004_db3_b"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db4_a.csv", "deep_print_priorenh_fvc_2004_db4_a"),
-    ("../results/DeepPrint_priorenh/fvc_2004_db4_b.csv", "deep_print_priorenh_fvc_2004_db4_b"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db1_a.csv", "deep_print_unetenh_fvc_2000_db1_a"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db1_b.csv", "deep_print_unetenh_fvc_2000_db1_b"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db2_a.csv", "deep_print_unetenh_fvc_2000_db2_a"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db2_b.csv", "deep_print_unetenh_fvc_2000_db2_b"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db3_a.csv", "deep_print_unetenh_fvc_2000_db3_a"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db3_b.csv", "deep_print_unetenh_fvc_2000_db3_b"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db4_a.csv", "deep_print_unetenh_fvc_2000_db4_a"),
-    ("../results/DeepPrint_unetenh/fvc_2000_db4_b.csv", "deep_print_unetenh_fvc_2000_db4_b"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db1_a.csv", "deep_print_unetenh_fvc_2002_db1_a"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db1_b.csv", "deep_print_unetenh_fvc_2002_db1_b"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db2_a.csv", "deep_print_unetenh_fvc_2002_db2_a"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db2_b.csv", "deep_print_unetenh_fvc_2002_db2_b"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db3_a.csv", "deep_print_unetenh_fvc_2002_db3_a"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db3_b.csv", "deep_print_unetenh_fvc_2002_db3_b"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db4_a.csv", "deep_print_unetenh_fvc_2002_db4_a"),
-    ("../results/DeepPrint_unetenh/fvc_2002_db4_b.csv", "deep_print_unetenh_fvc_2002_db4_b"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db1_a.csv", "deep_print_unetenh_fvc_2004_db1_a"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db1_b.csv", "deep_print_unetenh_fvc_2004_db1_b"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db2_a.csv", "deep_print_unetenh_fvc_2004_db2_a"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db2_b.csv", "deep_print_unetenh_fvc_2004_db2_b"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db3_a.csv", "deep_print_unetenh_fvc_2004_db3_a"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db3_b.csv", "deep_print_unetenh_fvc_2004_db3_b"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db4_a.csv", "deep_print_unetenh_fvc_2004_db4_a"),
-    ("../results/DeepPrint_unetenh/fvc_2004_db4_b.csv", "deep_print_unetenh_fvc_2004_db4_b"),
-    ("../results/FLARE/FVC_2000_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db1_a_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db1_a_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db1_b_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db1_b_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db2_a_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db2_a_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db2_b_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db2_b_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db3_a_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db3_a_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db3_b_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db3_b_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db4_a_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db4_a_voting_pose"),
-    ("../results/FLARE/FVC_2000_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2000_db4_b_regression_pose"),
-    ("../results/FLARE/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2000_db4_b_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db1_a_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db1_a_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db1_b_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db1_b_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db2_a_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db2_a_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db2_b_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db2_b_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db3_a_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db3_a_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db3_b_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db3_b_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db4_a_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db4_a_voting_pose"),
-    ("../results/FLARE/FVC_2002_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2002_db4_b_regression_pose"),
-    ("../results/FLARE/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2002_db4_b_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db1_a_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db1_a_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db1_b_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db1_b_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db2_a_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db2_a_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db2_b_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db2_b_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db3_a_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db3_a_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db3_b_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db3_b_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db4_a_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db4_a_voting_pose"),
-    ("../results/FLARE/FVC_2004_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_fvc_2004_db4_b_regression_pose"),
-    ("../results/FLARE/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_fvc_2004_db4_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db1_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db1_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db1_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db1_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db2_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db2_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db2_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db2_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db3_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db3_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db3_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db3_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db4_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db4_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2000_db4_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2000_db4_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db1_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db1_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db1_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db1_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db2_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db2_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db2_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db2_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db3_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db3_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db3_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db3_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db4_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db4_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2002_db4_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2002_db4_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db1_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db1_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db1_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db1_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db2_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db2_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db2_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db2_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db3_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db3_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db3_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db3_b_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db4_a_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db4_a_voting_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_fvc_2004_db4_b_regression_pose"),
-    ("../results/FLARE_PRIORENH/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_fvc_2004_db4_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db1_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db1_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db1_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db1_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db2_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db2_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db2_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db2_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db3_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db3_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db3_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db3_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db4_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db4_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2000_db4_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2000_db4_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db1_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db1_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db1_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db1_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db2_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db2_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db2_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db2_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db3_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db3_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db3_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db3_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db4_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db4_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2002_db4_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2002_db4_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db1_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db1_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db1_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db1_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db2_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db2_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db2_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db2_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db3_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db3_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db3_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db3_b_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db4_a_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db4_a_voting_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_fvc_2004_db4_b_regression_pose"),
-    ("../results/FLARE_UNETENH/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_fvc_2004_db4_b_voting_pose"),
+    ("../scores/DeepPrint/fvc_2000_db1_a.csv", "deep_print_fvc_2000_db1_a"),
+    ("../scores/DeepPrint/fvc_2000_db1_b.csv", "deep_print_fvc_2000_db1_b"),
+    ("../scores/DeepPrint/fvc_2000_db2_a.csv", "deep_print_fvc_2000_db2_a"),
+    ("../scores/DeepPrint/fvc_2000_db2_b.csv", "deep_print_fvc_2000_db2_b"),
+    ("../scores/DeepPrint/fvc_2000_db3_a.csv", "deep_print_fvc_2000_db3_a"),
+    ("../scores/DeepPrint/fvc_2000_db3_b.csv", "deep_print_fvc_2000_db3_b"),
+    ("../scores/DeepPrint/fvc_2000_db4_a.csv", "deep_print_fvc_2000_db4_a"),
+    ("../scores/DeepPrint/fvc_2000_db4_b.csv", "deep_print_fvc_2000_db4_b"),
+    ("../scores/DeepPrint/fvc_2002_db1_a.csv", "deep_print_fvc_2002_db1_a"),
+    ("../scores/DeepPrint/fvc_2002_db1_b.csv", "deep_print_fvc_2002_db1_b"),
+    ("../scores/DeepPrint/fvc_2002_db2_a.csv", "deep_print_fvc_2002_db2_a"),
+    ("../scores/DeepPrint/fvc_2002_db2_b.csv", "deep_print_fvc_2002_db2_b"),
+    ("../scores/DeepPrint/fvc_2002_db3_a.csv", "deep_print_fvc_2002_db3_a"),
+    ("../scores/DeepPrint/fvc_2002_db3_b.csv", "deep_print_fvc_2002_db3_b"),
+    ("../scores/DeepPrint/fvc_2002_db4_a.csv", "deep_print_fvc_2002_db4_a"),
+    ("../scores/DeepPrint/fvc_2002_db4_b.csv", "deep_print_fvc_2002_db4_b"),
+    ("../scores/DeepPrint/fvc_2004_db1_a.csv", "deep_print_fvc_2004_db1_a"),
+    ("../scores/DeepPrint/fvc_2004_db1_b.csv", "deep_print_fvc_2004_db1_b"),
+    ("../scores/DeepPrint/fvc_2004_db2_a.csv", "deep_print_fvc_2004_db2_a"),
+    ("../scores/DeepPrint/fvc_2004_db2_b.csv", "deep_print_fvc_2004_db2_b"),
+    ("../scores/DeepPrint/fvc_2004_db3_a.csv", "deep_print_fvc_2004_db3_a"),
+    ("../scores/DeepPrint/fvc_2004_db3_b.csv", "deep_print_fvc_2004_db3_b"),
+    ("../scores/DeepPrint/fvc_2004_db4_a.csv", "deep_print_fvc_2004_db4_a"),
+    ("../scores/DeepPrint/fvc_2004_db4_b.csv", "deep_print_fvc_2004_db4_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db1_a.csv", "deep_print_priorenh_fvc_2000_db1_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db1_b.csv", "deep_print_priorenh_fvc_2000_db1_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db2_a.csv", "deep_print_priorenh_fvc_2000_db2_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db2_b.csv", "deep_print_priorenh_fvc_2000_db2_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db3_a.csv", "deep_print_priorenh_fvc_2000_db3_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db3_b.csv", "deep_print_priorenh_fvc_2000_db3_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db4_a.csv", "deep_print_priorenh_fvc_2000_db4_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2000_db4_b.csv", "deep_print_priorenh_fvc_2000_db4_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db1_a.csv", "deep_print_priorenh_fvc_2002_db1_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db1_b.csv", "deep_print_priorenh_fvc_2002_db1_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db2_a.csv", "deep_print_priorenh_fvc_2002_db2_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db2_b.csv", "deep_print_priorenh_fvc_2002_db2_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db3_a.csv", "deep_print_priorenh_fvc_2002_db3_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db3_b.csv", "deep_print_priorenh_fvc_2002_db3_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db4_a.csv", "deep_print_priorenh_fvc_2002_db4_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2002_db4_b.csv", "deep_print_priorenh_fvc_2002_db4_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db1_a.csv", "deep_print_priorenh_fvc_2004_db1_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db1_b.csv", "deep_print_priorenh_fvc_2004_db1_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db2_a.csv", "deep_print_priorenh_fvc_2004_db2_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db2_b.csv", "deep_print_priorenh_fvc_2004_db2_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db3_a.csv", "deep_print_priorenh_fvc_2004_db3_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db3_b.csv", "deep_print_priorenh_fvc_2004_db3_b"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db4_a.csv", "deep_print_priorenh_fvc_2004_db4_a"),
+    ("../scores/DeepPrint_priorenh/fvc_2004_db4_b.csv", "deep_print_priorenh_fvc_2004_db4_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db1_a.csv", "deep_print_unetenh_fvc_2000_db1_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db1_b.csv", "deep_print_unetenh_fvc_2000_db1_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db2_a.csv", "deep_print_unetenh_fvc_2000_db2_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db2_b.csv", "deep_print_unetenh_fvc_2000_db2_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db3_a.csv", "deep_print_unetenh_fvc_2000_db3_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db3_b.csv", "deep_print_unetenh_fvc_2000_db3_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db4_a.csv", "deep_print_unetenh_fvc_2000_db4_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2000_db4_b.csv", "deep_print_unetenh_fvc_2000_db4_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db1_a.csv", "deep_print_unetenh_fvc_2002_db1_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db1_b.csv", "deep_print_unetenh_fvc_2002_db1_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db2_a.csv", "deep_print_unetenh_fvc_2002_db2_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db2_b.csv", "deep_print_unetenh_fvc_2002_db2_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db3_a.csv", "deep_print_unetenh_fvc_2002_db3_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db3_b.csv", "deep_print_unetenh_fvc_2002_db3_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db4_a.csv", "deep_print_unetenh_fvc_2002_db4_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2002_db4_b.csv", "deep_print_unetenh_fvc_2002_db4_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db1_a.csv", "deep_print_unetenh_fvc_2004_db1_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db1_b.csv", "deep_print_unetenh_fvc_2004_db1_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db2_a.csv", "deep_print_unetenh_fvc_2004_db2_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db2_b.csv", "deep_print_unetenh_fvc_2004_db2_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db3_a.csv", "deep_print_unetenh_fvc_2004_db3_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db3_b.csv", "deep_print_unetenh_fvc_2004_db3_b"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db4_a.csv", "deep_print_unetenh_fvc_2004_db4_a"),
+    ("../scores/DeepPrint_unetenh/fvc_2004_db4_b.csv", "deep_print_unetenh_fvc_2004_db4_b"),
+    ("../scores/FLARE/FVC_2000_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db1_a"),
+    ("../scores/FLARE/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db1_a"),
+    ("../scores/FLARE/FVC_2000_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db1_b"),
+    ("../scores/FLARE/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db1_b"),
+    ("../scores/FLARE/FVC_2000_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db2_a"),
+    ("../scores/FLARE/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db2_a"),
+    ("../scores/FLARE/FVC_2000_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db2_b"),
+    ("../scores/FLARE/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db2_b"),
+    ("../scores/FLARE/FVC_2000_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db3_a"),
+    ("../scores/FLARE/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db3_a"),
+    ("../scores/FLARE/FVC_2000_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db3_b"),
+    ("../scores/FLARE/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db3_b"),
+    ("../scores/FLARE/FVC_2000_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db4_a"),
+    ("../scores/FLARE/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db4_a"),
+    ("../scores/FLARE/FVC_2000_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2000_db4_b"),
+    ("../scores/FLARE/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2000_db4_b"),
+    ("../scores/FLARE/FVC_2002_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db1_a"),
+    ("../scores/FLARE/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db1_a"),
+    ("../scores/FLARE/FVC_2002_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db1_b"),
+    ("../scores/FLARE/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db1_b"),
+    ("../scores/FLARE/FVC_2002_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db2_a"),
+    ("../scores/FLARE/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db2_a"),
+    ("../scores/FLARE/FVC_2002_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db2_b"),
+    ("../scores/FLARE/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db2_b"),
+    ("../scores/FLARE/FVC_2002_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db3_a"),
+    ("../scores/FLARE/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db3_a"),
+    ("../scores/FLARE/FVC_2002_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db3_b"),
+    ("../scores/FLARE/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db3_b"),
+    ("../scores/FLARE/FVC_2002_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db4_a"),
+    ("../scores/FLARE/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db4_a"),
+    ("../scores/FLARE/FVC_2002_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2002_db4_b"),
+    ("../scores/FLARE/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2002_db4_b"),
+    ("../scores/FLARE/FVC_2004_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db1_a"),
+    ("../scores/FLARE/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db1_a"),
+    ("../scores/FLARE/FVC_2004_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db1_b"),
+    ("../scores/FLARE/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db1_b"),
+    ("../scores/FLARE/FVC_2004_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db2_a"),
+    ("../scores/FLARE/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db2_a"),
+    ("../scores/FLARE/FVC_2004_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db2_b"),
+    ("../scores/FLARE/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db2_b"),
+    ("../scores/FLARE/FVC_2004_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db3_a"),
+    ("../scores/FLARE/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db3_a"),
+    ("../scores/FLARE/FVC_2004_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db3_b"),
+    ("../scores/FLARE/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db3_b"),
+    ("../scores/FLARE/FVC_2004_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db4_a"),
+    ("../scores/FLARE/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db4_a"),
+    ("../scores/FLARE/FVC_2004_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_regression_pose_fvc_2004_db4_b"),
+    ("../scores/FLARE/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_voting_pose_fvc_2004_db4_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db1_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db1_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db1_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db1_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db2_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db2_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db2_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db2_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db3_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db3_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db3_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db3_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db4_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db4_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2000_db4_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2000_db4_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db1_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db1_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db1_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db1_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db2_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db2_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db2_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db2_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db3_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db3_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db3_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db3_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db4_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db4_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2002_db4_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2002_db4_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db1_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db1_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db1_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db1_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db2_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db2_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db2_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db2_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db3_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db3_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db3_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db3_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db4_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db4_a"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_priorenh_regression_pose_fvc_2004_db4_b"),
+    ("../scores/FLARE_PRIORENH/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_priorenh_voting_pose_fvc_2004_db4_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db1_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db1_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db1_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db1_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db2_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db2_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db2_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db2_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db3_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db3_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db3_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db3_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db4_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db4_a"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2000_db4_b"),
+    ("../scores/FLARE_UNETENH/FVC_2000_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2000_db4_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db1_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db1_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db1_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db1_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db2_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db2_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db2_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db2_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db3_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db3_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db3_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db3_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db4_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db4_a"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2002_db4_b"),
+    ("../scores/FLARE_UNETENH/FVC_2002_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2002_db4_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB1_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db1_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB1_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db1_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB1_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db1_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB1_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db1_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB2_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db2_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB2_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db2_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB2_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db2_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB2_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db2_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB3_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db3_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB3_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db3_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB3_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db3_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB3_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db3_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB4_A/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db4_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB4_A/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db4_a"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB4_B/FDD_feat_RegressionPose/score_FDD.csv", "flare_unetenh_regression_pose_fvc_2004_db4_b"),
+    ("../scores/FLARE_UNETENH/FVC_2004_DB4_B/FDD_feat_VotingPose/score_FDD.csv", "flare_unetenh_voting_pose_fvc_2004_db4_b"),
 )
+
+DEFAULT_FILE_NAME_MAP: dict[str, str] = {
+    file_path: file_name for file_path, file_name in DEFAULT_FILES
+}
+
+RESOLVED_DEFAULT_FILE_NAME_MAP: dict[Path, str] = {
+    (SCRIPT_DIR / file_path).resolve(): file_name
+    for file_path, file_name in DEFAULT_FILES
+}
+
+
+def normalize_color(
+    color: tuple[float, float, float] | list[float] | str,
+) -> tuple[float, float, float] | str:
+    if isinstance(color, (tuple, list)) and len(color) >= 3:
+        if any(channel > 1.0 for channel in color[:3]):
+            return (
+                float(color[0]) / 255.0,
+                float(color[1]) / 255.0,
+                float(color[2]) / 255.0,
+            )
+        return (float(color[0]), float(color[1]), float(color[2]))
+    return color
+
+
+def get_file_identifier(input_file: str | Path, explicit_name: str | None = None) -> str:
+    if explicit_name:
+        return explicit_name
+
+    file_string = str(input_file)
+    if file_string in DEFAULT_FILE_NAME_MAP:
+        return DEFAULT_FILE_NAME_MAP[file_string]
+
+    resolved_path = resolve_existing_file(input_file)
+    if resolved_path in RESOLVED_DEFAULT_FILE_NAME_MAP:
+        return RESOLVED_DEFAULT_FILE_NAME_MAP[resolved_path]
+
+    stem = resolved_path.stem
+    if stem.endswith("_metrics"):
+        return stem[:-8]
+    return stem
 
 
 def load_dataframe(file_path: str | Path) -> pd.DataFrame:
@@ -272,7 +322,12 @@ def resolve_existing_file(file_path: str | Path) -> Path:
     return path
 
 
-def derive_metrics_path(input_path: str | Path, output_format: str | None = None) -> Path:
+def derive_metrics_path(
+    input_path: str | Path,
+    output_name: str | None = None,
+    output_format: str | None = None,
+    output_directory: Path = METRICS_DIR,
+) -> Path:
     path = Path(input_path)
     suffix = path.suffix.lower()
 
@@ -284,11 +339,19 @@ def derive_metrics_path(input_path: str | Path, output_format: str | None = None
     else:
         target_suffix = ".csv"
 
-    stem = path.stem
-    if stem.endswith("_metrics"):
-        return path.with_suffix(target_suffix)
+    identifier = get_file_identifier(input_path, output_name)
+    return output_directory / f"{identifier}{target_suffix}"
 
-    return path.with_name(f"{stem}_metrics{target_suffix}")
+
+def derive_histogram_path(
+    input_path: str | Path,
+    output_name: str | None = None,
+    output_directory: Path = HISTOGRAMS_DIR,
+    extension: str = ".png",
+) -> Path:
+    identifier = get_file_identifier(input_path, output_name)
+    target_extension = extension if extension.startswith(".") else f".{extension}"
+    return output_directory / f"{identifier}{target_extension}"
 
 
 derive_metrics_csv_path = derive_metrics_path
@@ -397,6 +460,7 @@ def evaluate_thresholds_in_parallel(
 def calculate_metrics(
     input_file: str | Path,
     output_file: str | Path | None = None,
+    output_name: str | None = None,
     output_format: str | None = None,
     group_size: int = THRESHOLD_GROUP_SIZE,
     max_workers: int | None = None,
@@ -408,9 +472,13 @@ def calculate_metrics(
         return
 
     if output_file is None:
-        out_path = derive_metrics_path(resolved_path, output_format=output_format)
+        out_path = derive_metrics_path(
+            resolved_path,
+            output_name=output_name,
+            output_format=output_format,
+        )
     else:
-        out_path = (SCRIPT_DIR / output_file).resolve()
+        out_path = (SCRIPT_DIR / output_file).resolve() if not Path(output_file).is_absolute() else Path(output_file)
 
     comparisons = load_dataframe(resolved_path)
     if comparisons.empty or "score" not in comparisons or "user_1" not in comparisons or "user_2" not in comparisons:
@@ -436,7 +504,15 @@ def calculate_metrics(
     print(f"Metrics saved to: {out_path}")
 
 
-def plot_histogram(input_file: str | Path, bin_width: float = BIN_WIDTH) -> None:
+def plot_histogram(
+    input_file: str | Path,
+    output_file: str | Path | None = None,
+    output_name: str | None = None,
+    bin_width: float = BIN_WIDTH,
+    genuine_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_GENUINE_COLOR,
+    impostor_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_IMPOSTOR_COLOR,
+    alpha: float = HISTOGRAM_ALPHA,
+) -> None:
     resolved_path = resolve_existing_file(input_file)
     if not resolved_path.is_file() or resolved_path.suffix.lower() not in (".csv", ".parquet"):
         print(f"File not found: {input_file}")
@@ -454,19 +530,45 @@ def plot_histogram(input_file: str | Path, bin_width: float = BIN_WIDTH) -> None
         bin_width,
     )
 
+    if output_file is None:
+        out_png = derive_histogram_path(resolved_path, output_name=output_name)
+    else:
+        out_png = (SCRIPT_DIR / output_file).resolve() if not Path(output_file).is_absolute() else Path(output_file)
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    normalized_genuine_color = normalize_color(genuine_color)
+    normalized_impostor_color = normalize_color(impostor_color)
+    title_text = output_name or get_file_identifier(resolved_path)
+
     plt.figure(figsize=(10, 6))
-    plt.hist(genuine, bins=bin_edges, alpha=0.05, label="Mesmo usuário", color="blue", edgecolor="black")
-    plt.hist(impostor, bins=bin_edges, alpha=0.05, label="Usuários diferentes", color="red", edgecolor="black")
+    plt.hist(
+        genuine,
+        bins=bin_edges,
+        alpha=alpha,
+        label="Mesmo usuário",
+        color=normalized_genuine_color,
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    plt.hist(
+        impostor,
+        bins=bin_edges,
+        alpha=alpha,
+        label="Usuários diferentes",
+        color=normalized_impostor_color,
+        edgecolor="black",
+        linewidth=0.5,
+    )
     plt.xlabel("Score")
     plt.ylabel("Quantidade")
-    plt.title(resolved_path.stem)
+    plt.title(title_text)
     plt.legend()
     plt.tight_layout()
 
-    output_png = resolved_path.with_suffix(".png")
-    plt.savefig(output_png, dpi=150)
+    plt.savefig(out_png, dpi=150)
     plt.close()
-    print(f"Histogram saved to: {output_png}")
+    print(f"Histogram saved to: {out_png}")
 
 
 def find_min_diff(metrics_file: str | Path, result_name: str | None = None) -> dict | None:
@@ -490,22 +592,7 @@ def find_min_diff(metrics_file: str | Path, result_name: str | None = None) -> d
     err = round((frr + far) / 2.0, DECIMAL_PLACES)
     threshold = round(float(best_row["threshold"]), DECIMAL_PLACES)
 
-    if result_name is not None:
-        filename = result_name
-    else:
-        path_parts = [p.lower() for p in resolved_path.parts]
-        stem = resolved_path.stem
-        if stem.endswith("_metrics"):
-            stem = stem[:-8]
-
-        if "deepprint" in path_parts:
-            filename = f"deep_print_{stem}"
-        elif "flare" in path_parts:
-            idx = path_parts.index("flare")
-            db_name = path_parts[idx + 1]
-            filename = f"flare_{db_name}"
-        else:
-            filename = stem
+    filename = result_name if result_name is not None else get_file_identifier(resolved_path)
 
     print(f"File: {resolved_path.name}")
     print(f"Row with minimal |frr - far| (diff = {best_diff:.10f}):")
@@ -523,17 +610,23 @@ def find_min_diff(metrics_file: str | Path, result_name: str | None = None) -> d
 
 
 def run_metrics_command(
-    files: tuple[tuple[str, str], ...],
+    files: tuple[tuple[str, str], ...] | list,
     output_format: str | None = None,
     group_size: int = THRESHOLD_GROUP_SIZE,
     max_workers: int | None = None,
     executor_type: str = "process",
 ) -> None:
     for item in files:
-        input_file = item[0] if isinstance(item, tuple) else item
+        if isinstance(item, (tuple, list)):
+            input_file = item[0]
+            output_name = item[1] if len(item) > 1 and item[1] else None
+        else:
+            input_file, output_name = item, None
+
         print(f"Calculating metrics for: {input_file}")
         calculate_metrics(
             input_file,
+            output_name=output_name,
             output_format=output_format,
             group_size=group_size,
             max_workers=max_workers,
@@ -542,45 +635,67 @@ def run_metrics_command(
 
 
 def run_histogram_command(
-    files: tuple[tuple[str, str], ...],
-    bin_width: float,
+    files: tuple[tuple[str, str], ...] | list,
+    bin_width: float = BIN_WIDTH,
+    genuine_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_GENUINE_COLOR,
+    impostor_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_IMPOSTOR_COLOR,
+    alpha: float = HISTOGRAM_ALPHA,
 ) -> None:
     for item in files:
-        input_file = item[0] if isinstance(item, tuple) else item
+        if isinstance(item, (tuple, list)):
+            input_file = item[0]
+            output_name = item[1] if len(item) > 1 and item[1] else None
+        else:
+            input_file, output_name = item, None
+
         print(f"Plotting histogram for: {input_file}")
-        plot_histogram(input_file, bin_width)
+        plot_histogram(
+            input_file,
+            output_name=output_name,
+            bin_width=bin_width,
+            genuine_color=genuine_color,
+            impostor_color=impostor_color,
+            alpha=alpha,
+        )
 
 
 def run_min_diff_command(
-    files: tuple[tuple[str, str], ...],
-    output_file: str | Path = "../results/min_diff.csv",
+    files: tuple[tuple[str, str], ...] | list,
+    output_file: str | Path = RESULTS_DIR / "min_diff.csv",
 ) -> None:
     results = []
-    default_files_map = {
-        resolve_existing_file(derive_metrics_path(p)): name
-        for p, name in DEFAULT_FILES
-    }
 
     for item in files:
-        if isinstance(item, tuple):
+        if isinstance(item, (tuple, list)):
             input_file = item[0]
             result_name = item[1] if len(item) > 1 and item[1] else None
         else:
             input_file, result_name = item, None
 
-        metrics_path = derive_metrics_path(input_file)
+        identifier = get_file_identifier(input_file, result_name)
+
+        metrics_path = METRICS_DIR / f"{identifier}.csv"
         resolved_metrics_path = resolve_existing_file(metrics_path)
 
-        if result_name is None and resolved_metrics_path in default_files_map:
-            result_name = default_files_map[resolved_metrics_path]
+        if not resolved_metrics_path.is_file():
+            parquet_metrics_path = METRICS_DIR / f"{identifier}.parquet"
+            resolved_metrics_path = resolve_existing_file(parquet_metrics_path)
+
+        if not resolved_metrics_path.is_file():
+            direct_resolved = resolve_existing_file(input_file)
+            if direct_resolved.is_file() and ("_metrics" in direct_resolved.stem or direct_resolved.parent == METRICS_DIR):
+                resolved_metrics_path = direct_resolved
+            else:
+                old_metrics_path = direct_resolved.with_name(f"{direct_resolved.stem}_metrics.csv")
+                resolved_metrics_path = resolve_existing_file(old_metrics_path)
 
         print(f"Finding min diff for: {resolved_metrics_path.name}")
-        row_dict = find_min_diff(resolved_metrics_path, result_name=result_name)
+        row_dict = find_min_diff(resolved_metrics_path, result_name=identifier)
         if row_dict is not None:
             results.append(row_dict)
 
     if results:
-        out_path = (SCRIPT_DIR / output_file).resolve()
+        out_path = (SCRIPT_DIR / output_file).resolve() if not Path(output_file).is_absolute() else Path(output_file)
         results_dataframe = pd.DataFrame(
             results, columns=["file", "far", "frr", "err", "threshold"]
         ).round(DECIMAL_PLACES)
@@ -602,16 +717,22 @@ def main() -> None:
     histogram_parser = subparsers.add_parser("histogram", help="Plot score distribution histograms.")
     histogram_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
     histogram_parser.add_argument("--bin-width", type=float, default=BIN_WIDTH, help="Bin width for histogram.")
+    histogram_parser.add_argument("--alpha", type=float, default=HISTOGRAM_ALPHA, help=f"Transparency (alpha) for histogram bars (default: {HISTOGRAM_ALPHA}).")
+    histogram_parser.add_argument("--genuine-color", type=float, nargs=3, default=list(HISTOGRAM_GENUINE_COLOR), metavar=("R", "G", "B"), help=f"RGB values for genuine scores (default: {HISTOGRAM_GENUINE_COLOR}).")
+    histogram_parser.add_argument("--impostor-color", type=float, nargs=3, default=list(HISTOGRAM_IMPOSTOR_COLOR), metavar=("R", "G", "B"), help=f"RGB values for impostor scores (default: {HISTOGRAM_IMPOSTOR_COLOR}).")
 
     min_diff_parser = subparsers.add_parser("min-diff", help="Find row with minimal |frr - far| from metrics files.")
     min_diff_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files or metrics files (.csv or .parquet) to process.")
-    min_diff_parser.add_argument("--output", default="../results/min_diff.csv", help="Output file path for min diff results (.csv or .parquet).")
+    min_diff_parser.add_argument("--output", default=str(RESULTS_DIR / "min_diff.csv"), help="Output file path for min diff results (.csv or .parquet).")
 
     all_parser = subparsers.add_parser("all", help="Run metrics, histogram, and min-diff analysis on target files.")
     all_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
     all_parser.add_argument("--bin-width", type=float, default=BIN_WIDTH, help="Bin width for histogram.")
+    all_parser.add_argument("--alpha", type=float, default=HISTOGRAM_ALPHA, help=f"Transparency (alpha) for histogram bars (default: {HISTOGRAM_ALPHA}).")
+    all_parser.add_argument("--genuine-color", type=float, nargs=3, default=list(HISTOGRAM_GENUINE_COLOR), metavar=("R", "G", "B"), help=f"RGB values for genuine scores (default: {HISTOGRAM_GENUINE_COLOR}).")
+    all_parser.add_argument("--impostor-color", type=float, nargs=3, default=list(HISTOGRAM_IMPOSTOR_COLOR), metavar=("R", "G", "B"), help=f"RGB values for impostor scores (default: {HISTOGRAM_IMPOSTOR_COLOR}).")
     all_parser.add_argument("--format", choices=["csv", "parquet"], default=None, help="Output format for metrics files (defaults to input file format).")
-    all_parser.add_argument("--output", default="../results/min_diff.csv", help="Output file path for min diff results (.csv or .parquet).")
+    all_parser.add_argument("--output", default=str(RESULTS_DIR / "min_diff.csv"), help="Output file path for min diff results (.csv or .parquet).")
     all_parser.add_argument("--group-size", type=int, default=THRESHOLD_GROUP_SIZE, help="Threshold chunk size for parallel processing (default: 200).")
     all_parser.add_argument("--workers", type=int, default=None, help="Number of worker threads or processes.")
     all_parser.add_argument("--executor", choices=["process", "thread"], default="process", help="Parallel execution backend ('process' or 'thread').")
@@ -620,7 +741,7 @@ def main() -> None:
 
     if args.command in ("metrics", "histogram", "min-diff", "all"):
         files: tuple[tuple[str, str], ...] = tuple(
-            (item, "") if isinstance(item, str) else tuple(item)
+            (item, get_file_identifier(item)) if isinstance(item, str) else tuple(item)
             for item in args.files
         )
 
@@ -633,7 +754,13 @@ def main() -> None:
                 executor_type=args.executor,
             )
         elif args.command == "histogram":
-            run_histogram_command(files, args.bin_width)
+            run_histogram_command(
+                files,
+                bin_width=args.bin_width,
+                genuine_color=tuple(args.genuine_color),
+                impostor_color=tuple(args.impostor_color),
+                alpha=args.alpha,
+            )
         elif args.command == "min-diff":
             run_min_diff_command(files, args.output)
         elif args.command == "all":
@@ -644,7 +771,13 @@ def main() -> None:
                 max_workers=args.workers,
                 executor_type=args.executor,
             )
-            run_histogram_command(files, args.bin_width)
+            run_histogram_command(
+                files,
+                bin_width=args.bin_width,
+                genuine_color=tuple(args.genuine_color),
+                impostor_color=tuple(args.impostor_color),
+                alpha=args.alpha,
+            )
             run_min_diff_command(files, args.output)
     else:
         parser.print_help()
