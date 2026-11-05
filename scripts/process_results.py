@@ -4,6 +4,7 @@ import argparse
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import csv
 from pathlib import Path
+import re
 import sys
 
 import matplotlib.pyplot as plt
@@ -22,6 +23,10 @@ THRESHOLD_GROUP_SIZE = 200
 HISTOGRAM_GENUINE_COLOR: tuple[float, float, float] = (0.15, 0.85, 0.35)
 HISTOGRAM_IMPOSTOR_COLOR: tuple[float, float, float] = (1.0, 0.25, 0.25)
 HISTOGRAM_ALPHA = 0.6
+HISTOGRAM_LEGEND_FONT_SIZE = 16
+HISTOGRAM_TITLE_FONT_SIZE = 18
+HISTOGRAM_LABEL_FONT_SIZE = 16
+HISTOGRAM_TICK_FONT_SIZE = 14
 
 
 DEFAULT_FILES: tuple[tuple[str, str], ...] = (
@@ -322,6 +327,62 @@ def get_file_identifier(input_file: str | Path, explicit_name: str | None = None
     return stem
 
 
+CHART_MODEL_NAMES: dict[str, str] = {
+    "deep_print_priorenh": "DeepPrint PriorEnh",
+    "deep_print_unetenh": "DeepPrint UnetEnh",
+    "deep_print": "DeepPrint",
+    "flare_priorenh_regression_pose": "FLARE PriorEnh RegressionPose",
+    "flare_priorenh_voting_pose": "FLARE PriorEnh VotingPose",
+    "flare_unetenh_regression_pose": "FLARE UnetEnh RegressionPose",
+    "flare_unetenh_voting_pose": "FLARE UnetEnh VotingPose",
+    "flare_regression_pose": "FLARE RegressionPose",
+    "flare_voting_pose": "FLARE VotingPose",
+    "mcc_priorenh": "MCC PriorEnh",
+    "mcc_unetenh": "MCC UnetEnh",
+    "mcc": "MCC",
+}
+
+CHART_DATASET_NAMES: dict[str, str] = {
+    "crossmatch": "CrossMatch",
+    "crossmatch_sample_db": "CrossMatch Sample DB",
+    "crossmatch_priorenh": "CrossMatch PriorEnh",
+    "crossmatch_unetenh": "CrossMatch UnetEnh",
+    "uareu": "UareU",
+    "uareu_sample_db": "UareU Sample DB",
+}
+
+FVC_DATASET_PATTERN = re.compile(r"^fvc_?(\d{4})_db([1-4])_([ab])$", re.IGNORECASE)
+
+
+def format_dataset_name(dataset_identifier: str) -> str:
+    match = FVC_DATASET_PATTERN.match(dataset_identifier)
+    if match:
+        year, database_number, subset = match.groups()
+        return f"FVC{year} DB{database_number} {subset.upper()}"
+
+    lower_identifier = dataset_identifier.lower()
+    if lower_identifier in CHART_DATASET_NAMES:
+        return CHART_DATASET_NAMES[lower_identifier]
+
+    return " ".join(word.capitalize() for word in dataset_identifier.split("_") if word)
+
+
+def format_chart_title(identifier: str) -> str:
+    for prefix, model_name in sorted(CHART_MODEL_NAMES.items(), key=lambda item: -len(item[0])):
+        if identifier.startswith(f"{prefix}_"):
+            dataset_part = identifier[len(prefix) + 1 :]
+            return f"{model_name} - {format_dataset_name(dataset_part)}"
+        if identifier == prefix:
+            return model_name
+
+    match = FVC_DATASET_PATTERN.match(identifier)
+    if match:
+        year, database_number, subset = match.groups()
+        return f"FVC{year} DB{database_number} {subset.upper()}"
+
+    return " ".join(word.capitalize() for word in identifier.split("_") if word)
+
+
 def load_dataframe(file_path: str | Path) -> pd.DataFrame:
     path = Path(file_path)
     suffix = path.suffix.lower()
@@ -549,6 +610,10 @@ def plot_histogram(
     genuine_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_GENUINE_COLOR,
     impostor_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_IMPOSTOR_COLOR,
     alpha: float = HISTOGRAM_ALPHA,
+    legend_font_size: float = HISTOGRAM_LEGEND_FONT_SIZE,
+    title_font_size: float = HISTOGRAM_TITLE_FONT_SIZE,
+    label_font_size: float = HISTOGRAM_LABEL_FONT_SIZE,
+    tick_font_size: float = HISTOGRAM_TICK_FONT_SIZE,
 ) -> None:
     resolved_path = resolve_existing_file(input_file)
     if not resolved_path.is_file() or resolved_path.suffix.lower() not in (".csv", ".parquet"):
@@ -576,7 +641,7 @@ def plot_histogram(
 
     normalized_genuine_color = normalize_color(genuine_color)
     normalized_impostor_color = normalize_color(impostor_color)
-    title_text = output_name or get_file_identifier(resolved_path)
+    title_text = format_chart_title(output_name or get_file_identifier(resolved_path))
 
     plt.figure(figsize=(10, 6))
     plt.hist(
@@ -597,10 +662,11 @@ def plot_histogram(
         edgecolor="black",
         linewidth=0.5,
     )
-    plt.xlabel("Score")
-    plt.ylabel("Quantidade")
-    plt.title(title_text)
-    plt.legend()
+    plt.xlabel("Score", fontsize=label_font_size)
+    plt.ylabel("Quantidade", fontsize=label_font_size)
+    plt.title(title_text, fontsize=title_font_size)
+    plt.tick_params(axis="both", which="major", labelsize=tick_font_size)
+    plt.legend(fontsize=legend_font_size)
     plt.tight_layout()
 
     plt.savefig(out_png, dpi=150)
@@ -677,6 +743,10 @@ def run_histogram_command(
     genuine_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_GENUINE_COLOR,
     impostor_color: tuple[float, float, float] | list[float] | str = HISTOGRAM_IMPOSTOR_COLOR,
     alpha: float = HISTOGRAM_ALPHA,
+    legend_font_size: float = HISTOGRAM_LEGEND_FONT_SIZE,
+    title_font_size: float = HISTOGRAM_TITLE_FONT_SIZE,
+    label_font_size: float = HISTOGRAM_LABEL_FONT_SIZE,
+    tick_font_size: float = HISTOGRAM_TICK_FONT_SIZE,
 ) -> None:
     for item in files:
         if isinstance(item, (tuple, list)):
@@ -693,6 +763,10 @@ def run_histogram_command(
             genuine_color=genuine_color,
             impostor_color=impostor_color,
             alpha=alpha,
+            legend_font_size=legend_font_size,
+            title_font_size=title_font_size,
+            label_font_size=label_font_size,
+            tick_font_size=tick_font_size,
         )
 
 
@@ -755,6 +829,10 @@ def main() -> None:
     histogram_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
     histogram_parser.add_argument("--bin-width", type=float, default=BIN_WIDTH, help="Bin width for histogram.")
     histogram_parser.add_argument("--alpha", type=float, default=HISTOGRAM_ALPHA, help=f"Transparency (alpha) for histogram bars (default: {HISTOGRAM_ALPHA}).")
+    histogram_parser.add_argument("--legend-font-size", type=float, default=HISTOGRAM_LEGEND_FONT_SIZE, help=f"Font size for histogram legend (default: {HISTOGRAM_LEGEND_FONT_SIZE}).")
+    histogram_parser.add_argument("--title-font-size", type=float, default=HISTOGRAM_TITLE_FONT_SIZE, help=f"Font size for histogram title (default: {HISTOGRAM_TITLE_FONT_SIZE}).")
+    histogram_parser.add_argument("--label-font-size", type=float, default=HISTOGRAM_LABEL_FONT_SIZE, help=f"Font size for axis labels (default: {HISTOGRAM_LABEL_FONT_SIZE}).")
+    histogram_parser.add_argument("--tick-font-size", type=float, default=HISTOGRAM_TICK_FONT_SIZE, help=f"Font size for axis tick digits (default: {HISTOGRAM_TICK_FONT_SIZE}).")
     histogram_parser.add_argument("--genuine-color", type=float, nargs=3, default=list(HISTOGRAM_GENUINE_COLOR), metavar=("R", "G", "B"), help=f"RGB values for genuine scores (default: {HISTOGRAM_GENUINE_COLOR}).")
     histogram_parser.add_argument("--impostor-color", type=float, nargs=3, default=list(HISTOGRAM_IMPOSTOR_COLOR), metavar=("R", "G", "B"), help=f"RGB values for impostor scores (default: {HISTOGRAM_IMPOSTOR_COLOR}).")
 
@@ -766,6 +844,10 @@ def main() -> None:
     all_parser.add_argument("--files", nargs="*", default=DEFAULT_FILES, help="Score files (.csv or .parquet) to process.")
     all_parser.add_argument("--bin-width", type=float, default=BIN_WIDTH, help="Bin width for histogram.")
     all_parser.add_argument("--alpha", type=float, default=HISTOGRAM_ALPHA, help=f"Transparency (alpha) for histogram bars (default: {HISTOGRAM_ALPHA}).")
+    all_parser.add_argument("--legend-font-size", type=float, default=HISTOGRAM_LEGEND_FONT_SIZE, help=f"Font size for histogram legend (default: {HISTOGRAM_LEGEND_FONT_SIZE}).")
+    all_parser.add_argument("--title-font-size", type=float, default=HISTOGRAM_TITLE_FONT_SIZE, help=f"Font size for histogram title (default: {HISTOGRAM_TITLE_FONT_SIZE}).")
+    all_parser.add_argument("--label-font-size", type=float, default=HISTOGRAM_LABEL_FONT_SIZE, help=f"Font size for axis labels (default: {HISTOGRAM_LABEL_FONT_SIZE}).")
+    all_parser.add_argument("--tick-font-size", type=float, default=HISTOGRAM_TICK_FONT_SIZE, help=f"Font size for axis tick digits (default: {HISTOGRAM_TICK_FONT_SIZE}).")
     all_parser.add_argument("--genuine-color", type=float, nargs=3, default=list(HISTOGRAM_GENUINE_COLOR), metavar=("R", "G", "B"), help=f"RGB values for genuine scores (default: {HISTOGRAM_GENUINE_COLOR}).")
     all_parser.add_argument("--impostor-color", type=float, nargs=3, default=list(HISTOGRAM_IMPOSTOR_COLOR), metavar=("R", "G", "B"), help=f"RGB values for impostor scores (default: {HISTOGRAM_IMPOSTOR_COLOR}).")
     all_parser.add_argument("--format", choices=["csv", "parquet"], default=None, help="Output format for metrics files (defaults to input file format).")
@@ -797,6 +879,10 @@ def main() -> None:
                 genuine_color=tuple(args.genuine_color),
                 impostor_color=tuple(args.impostor_color),
                 alpha=args.alpha,
+                legend_font_size=args.legend_font_size,
+                title_font_size=args.title_font_size,
+                label_font_size=args.label_font_size,
+                tick_font_size=args.tick_font_size,
             )
         elif args.command == "min-diff":
             run_min_diff_command(files, args.output)
@@ -814,6 +900,10 @@ def main() -> None:
                 genuine_color=tuple(args.genuine_color),
                 impostor_color=tuple(args.impostor_color),
                 alpha=args.alpha,
+                legend_font_size=args.legend_font_size,
+                title_font_size=args.title_font_size,
+                label_font_size=args.label_font_size,
+                tick_font_size=args.tick_font_size,
             )
             run_min_diff_command(files, args.output)
     else:
